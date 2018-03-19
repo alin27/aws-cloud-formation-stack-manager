@@ -148,7 +148,7 @@ public class OpenShiftStackManager {
     	Map<String, String> subnetParameterMap = getSubnetParameters();
     	String templateURL = ssmServiceManager.getSSMParameter(SSM_TEMPLATE_URL, NO_DECRYPTION);
 		
-    	if (subnetParameterMap.get(PRIVATE_SUBNETS_KEY).isEmpty() && subnetParameterMap.get(PUBLIC_SUBNETS_KEY).isEmpty()) {
+    	if (subnetParameterMap.get(PRIVATE_SUBNETS_KEY) == null && subnetParameterMap.get(PUBLIC_SUBNETS_KEY) == null) {
     		templateURL = ssmServiceManager.getSSMParameter(SSM_MASTER_TEMPLATE_URL, NO_DECRYPTION);
 		}
 		   	
