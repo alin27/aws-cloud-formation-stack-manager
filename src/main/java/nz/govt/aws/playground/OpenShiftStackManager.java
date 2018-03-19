@@ -57,8 +57,6 @@ public class OpenShiftStackManager {
     
     private static final String SSM_STACK_NAME = "/OpenShift/CreateStacks/Dev/StackName";
     private static final String SSM_MASTER_TEMPLATE_URL = "/OpenShift/CreateStacks/Dev/MasterTemplateURL";   
-    private static final String SSM_PRIVATE_SUBNET_LIST = "/OpenShift/CreateStacks/Dev/PrivateSubnetList";
-    private static final String SSM_PUBLIC_SUBNET_LIST = "/OpenShift/CreateStacks/Dev/PublicSubnetList";
     private static final String SSM_TEMPLATE_URL = "/OpenShift/CreateStacks/Dev/TemplateURL";
     private static final String SSM_OPEN_SHIFT_ADMIN_PASSWORD = "/OpenShift/CreateStacks/Dev/OpenShiftAdminPassword";
     private static final String SSM_REDHAT_SUBSCRIPTION_USER_NAME = "/OpenShift/CreateStacks/Dev/RedhatSubscriptionUserName";
@@ -69,6 +67,8 @@ public class OpenShiftStackManager {
     private static final String SSM_CONTAINER_ACCESS_CIDR = "/OpenShift/CreateStacks/Dev/ContainerAccessCIDR";
     private static final String SSM_AVAILABILITY_ZONES = "/OpenShift/CreateStacks/Dev/AvailabilityZones";
     private static final String SSM_OUTPUT_BUCKET_NAME = "/OpenShift/CreateStacks/Dev/OutputBucketName";
+    private static final String SSM_PRIVATE_SUBNET_IDS = "/OpenShift/CreateStacks/Dev/PrivateSubnetIds";
+    private static final String SSM_PUBLIC_SUBNET_IDS = "/OpenShift/CreateStacks/Dev/PublicSubnetIds";
     
     public OpenShiftStackManager(String region) {
     	AmazonCloudFormationClientBuilder amazonCloudFormationClientBuilder = AmazonCloudFormationClientBuilder.standard();
@@ -255,7 +255,7 @@ public class OpenShiftStackManager {
 	
 		//Get private subnets
 		try {
-			List<String> privateSubnetList = ssmServiceManager.getSSMParameterList(SSM_PRIVATE_SUBNET_LIST, NO_DECRYPTION);
+			List<String> privateSubnetList = ssmServiceManager.getSSMParameterList(SSM_PRIVATE_SUBNET_IDS, NO_DECRYPTION);
 			for (int index = 0; index < PRIVATE_SUBNET_LIST_KEY.size(); index ++) {
 				resultMap.put(PRIVATE_SUBNET_LIST_KEY.get(index), privateSubnetList.get(index));
 			}
@@ -266,7 +266,7 @@ public class OpenShiftStackManager {
 		
 		//Get public subnets
 		try {
-			List<String> publicSubnetList = ssmServiceManager.getSSMParameterList(SSM_PUBLIC_SUBNET_LIST, NO_DECRYPTION);
+			List<String> publicSubnetList = ssmServiceManager.getSSMParameterList(SSM_PUBLIC_SUBNET_IDS, NO_DECRYPTION);
 			for (int index = 0; index < PUBLIC_SUBNET_LIST_KEY.size(); index ++) {
 				resultMap.put(PUBLIC_SUBNET_LIST_KEY.get(index), publicSubnetList.get(index));
 			}
