@@ -22,7 +22,7 @@ Lambda functions using cloud formation templates stored in AWS S3 bucket to auto
 | /OpenShift/CreateStacks/Dev/KeyPairName  | String  | Name of the key pair to use for SSH. |
 | /OpenShift/CreateStacks/Dev/MasterTemplateURL  | String  | URL of the cloud formation template for deploying OpenShift container platform into a new VPC. |
 | /OpenShift/CreateStacks/Dev/OpenShiftAdminPassword  | SecureString  | Encrypted admin password. |
-| /OpenShift/CreateStacks/Dev/RedhatSubscriptionPassword  | String | Encrypted Red Hat subscription password. |
+| /OpenShift/CreateStacks/Dev/RedhatSubscriptionPassword  | SecureString | Encrypted Red Hat subscription password. |
 | /OpenShift/CreateStacks/Dev/RedhatSubscriptionPoolID  | String | Pool ID of OpenShift container platform subscription. |
 | /OpenShift/CreateStacks/Dev/RedhatSubscriptionUserName  | String  | Red Hat subscription user name. |
 | /OpenShift/CreateStacks/Dev/RemoteAccessCIDR  | String  | Internal CIDR for remote access. |
@@ -31,7 +31,7 @@ Lambda functions using cloud formation templates stored in AWS S3 bucket to auto
 | /OpenShift/DeleteStacks/StackNamePrefix  | String | Used for stack deletion. Delete all stacks with name starts with this prefix. |
 | /OpenShift/TopicARN  | String  | Integration with SNS. The topic ARN to publish notifications to.|
 
-** (OPTIONAL) **
+**(OPTIONAL)**
 If the following parameters are found, the template will deploy OpenShift container platform into the existing VPC which those subnets belong to. Otherwise it will use the master template to create a new VPC.
 
 | Name  | Type | Description |
