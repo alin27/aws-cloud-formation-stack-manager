@@ -2,6 +2,7 @@ package nz.govt.aws.playground;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -52,8 +53,8 @@ public class OpenShiftStackManager {
     private static final String PRIVATE_SUBNETS_KEY = "PrivateSubnets";
     private static final String PUBLIC_SUBNETS_KEY = "PublicSubnets";
     private static final String VPCCIDR_KEY = "VPCCIDR";
-    private static final List<String> PRIVATE_SUBNET_LIST_KEY = Arrays.asList("PrivateSubnet1CIDR","PrivateSubnet2CIDR", "PrivateSubnet3CIDR");
-    private static final List<String> PUBLIC_SUBNET_LIST_KEY = Arrays.asList("PublicSubnet1CIDR","PublicSubnet2CIDR", "PublicSubnet3CIDR");
+    private static final List<String> PRIVATE_SUBNET_KEY_LIST = Arrays.asList("PrivateSubnet1CIDR","PrivateSubnet2CIDR", "PrivateSubnet3CIDR");
+    private static final List<String> PUBLIC_SUBNET_KEY_LIST = Arrays.asList("PublicSubnet1CIDR","PublicSubnet2CIDR", "PublicSubnet3CIDR");
     
     private static final String SSM_STACK_NAME = "/OpenShift/CreateStacks/Dev/StackName";
     private static final String SSM_MASTER_TEMPLATE_URL = "/OpenShift/CreateStacks/Dev/MasterTemplateURL";   
@@ -148,7 +149,7 @@ public class OpenShiftStackManager {
     	Map<String, String> subnetParameterMap = getSubnetParameters();
     	String templateURL = ssmServiceManager.getSSMParameter(SSM_TEMPLATE_URL, NO_DECRYPTION);
 		
-    	if (subnetParameterMap.get(PRIVATE_SUBNETS_KEY) == null && subnetParameterMap.get(PUBLIC_SUBNETS_KEY) == null) {
+    	if (!allSubnetParametersAvailable(subnetParameterMap)) {
     		templateURL = ssmServiceManager.getSSMParameter(SSM_MASTER_TEMPLATE_URL, NO_DECRYPTION);
 		}
 		   	
@@ -185,26 +186,24 @@ public class OpenShiftStackManager {
 		Parameter containerAccessCIDRParam = setParameter(CONTAINER_ACCESS_CIDR_KEY, containerAccessCIDR);
 		Parameter availabilityZonesParam = setParameter(AVAILABILITY_ZONES_KEY, availabilityZones);
 	
-		List<Parameter> parameterList = Arrays.asList(openShiftAdminPasswordParam, redhatSubscriptionUserNameParam, redhatSubscriptionPasswordParam,
+		List<Parameter> parameterList = generateParameterList(openShiftAdminPasswordParam, redhatSubscriptionUserNameParam, redhatSubscriptionPasswordParam,
 				redhatSubscriptionPoolIdParam, keyPairNameParam, remoteAccessCIDRParam,containerAccessCIDRParam, availabilityZonesParam);
 		
-		if (allSubnetParametersAvailable(subnetParameterMap)) {			
-			for (int index = 0; index < PRIVATE_SUBNET_LIST_KEY.size(); index ++) {
-				Parameter privateSubnetsParam = new Parameter();
-				privateSubnetsParam.setParameterKey(PRIVATE_SUBNET_LIST_KEY.get(index));
-				privateSubnetsParam.setParameterValue(subnetParameterMap.get(PRIVATE_SUBNET_LIST_KEY.get(index)));
+		if (allSubnetParametersAvailable(subnetParameterMap)) {		
+			for (String privateSubnetKey : PRIVATE_SUBNET_KEY_LIST) {
+				Parameter privateSubnetsParam = setParameter(privateSubnetKey,
+						subnetParameterMap.get(privateSubnetKey).toString());
 				parameterList.add(privateSubnetsParam);
 			}
 			
-			for (int index = 0; index < PUBLIC_SUBNET_LIST_KEY.size(); index ++) {
-				Parameter publicSubnetsParam = new Parameter();
-				publicSubnetsParam.setParameterKey(PUBLIC_SUBNET_LIST_KEY.get(index));
-				publicSubnetsParam.setParameterValue(subnetParameterMap.get(PUBLIC_SUBNET_LIST_KEY.get(index)));
+			for (String publicSubnetKey : PUBLIC_SUBNET_KEY_LIST) {
+				Parameter publicSubnetsParam = setParameter(publicSubnetKey,
+						subnetParameterMap.get(publicSubnetKey));
 				parameterList.add(publicSubnetsParam);
 			}
 			
 			//Get VPCCIDR using the first entry in private subnet list
-			String subnetId = subnetParameterMap.get(PRIVATE_SUBNET_LIST_KEY.get(0));
+			String subnetId = subnetParameterMap.get(PRIVATE_SUBNET_KEY_LIST.get(0));
 			String vpccidr = getVPCCIDRFromSubnetId(subnetId);
 			Parameter vpccidrParam = setParameter(VPCCIDR_KEY, vpccidr);
 			parameterList.add(vpccidrParam);
@@ -217,14 +216,14 @@ public class OpenShiftStackManager {
 	boolean allSubnetParametersAvailable(Map<String, String> subnetParameterMap) {
 		boolean result = true;
 		
-		for (String subnetName : PRIVATE_SUBNET_LIST_KEY) {
+		for (String subnetName : PRIVATE_SUBNET_KEY_LIST) {
 			if(subnetParameterMap.get(subnetName) == null) {
 				log.warning("Missing private subnet parameter '" + subnetName + "'");
 				result = false;
 			}
 		}
 		
-		for (String subnetName : PUBLIC_SUBNET_LIST_KEY) {
+		for (String subnetName : PUBLIC_SUBNET_KEY_LIST) {
 			if(subnetParameterMap.get(subnetName) == null) {
 				log.warning("Missing public subnet parameter '" + subnetName + "'");
 				result = false;
@@ -250,14 +249,25 @@ public class OpenShiftStackManager {
 		return vpcId;
 		
 	}
+	
+	public List<Parameter> generateParameterList(Parameter... parameters){
+		List<Parameter> parameterList = new ArrayList<Parameter>();
+		for (Parameter parameter : parameters) {
+			parameterList.add(parameter);
+			log.info("Added '" + parameter.getParameterKey() + "' with value '" + parameter.getParameterValue() + "' to the list.");
+		}
+		return parameterList;
+	}
+	
 	public Map<String, String> getSubnetParameters() {
 		Map<String, String> resultMap = new HashMap<String,String>();
 	
 		//Get private subnets
 		try {
 			List<String> privateSubnetList = ssmServiceManager.getSSMParameterList(SSM_PRIVATE_SUBNET_IDS, NO_DECRYPTION);
-			for (int index = 0; index < PRIVATE_SUBNET_LIST_KEY.size(); index ++) {
-				resultMap.put(PRIVATE_SUBNET_LIST_KEY.get(index), privateSubnetList.get(index));
+			for (int index = 0; index < PRIVATE_SUBNET_KEY_LIST.size(); index ++) {
+				log.info("Put in new element. Key: " + PRIVATE_SUBNET_KEY_LIST.get(index) + ". Value: " + privateSubnetList.get(index));
+				resultMap.put(PRIVATE_SUBNET_KEY_LIST.get(index), privateSubnetList.get(index));
 			}
 			
 		}catch (ParameterNotFoundException e) {
@@ -267,8 +277,9 @@ public class OpenShiftStackManager {
 		//Get public subnets
 		try {
 			List<String> publicSubnetList = ssmServiceManager.getSSMParameterList(SSM_PUBLIC_SUBNET_IDS, NO_DECRYPTION);
-			for (int index = 0; index < PUBLIC_SUBNET_LIST_KEY.size(); index ++) {
-				resultMap.put(PUBLIC_SUBNET_LIST_KEY.get(index), publicSubnetList.get(index));
+			for (int index = 0; index < PUBLIC_SUBNET_KEY_LIST.size(); index ++) {
+				log.info("Put in new element. Key: " + PUBLIC_SUBNET_KEY_LIST.get(index) + ". Value: " + publicSubnetList.get(index));
+				resultMap.put(PUBLIC_SUBNET_KEY_LIST.get(index), publicSubnetList.get(index));
 			}
 		}catch (ParameterNotFoundException e) {
 			log.info("No public subnets specified, using the master template which will create a new VPC.");
