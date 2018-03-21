@@ -52,9 +52,9 @@ public class OpenShiftStackManager {
     private static final String AVAILABILITY_ZONES_KEY = "AvailabilityZones";
     private static final String PRIVATE_SUBNETS_KEY = "PrivateSubnets";
     private static final String PUBLIC_SUBNETS_KEY = "PublicSubnets";
-    private static final String VPCCIDR_KEY = "VPCCIDR";
-    private static final List<String> PRIVATE_SUBNET_KEY_LIST = Arrays.asList("PrivateSubnet1CIDR","PrivateSubnet2CIDR", "PrivateSubnet3CIDR");
-    private static final List<String> PUBLIC_SUBNET_KEY_LIST = Arrays.asList("PublicSubnet1CIDR","PublicSubnet2CIDR", "PublicSubnet3CIDR");
+    private static final String VPCID_KEY = "VPCID";
+    private static final List<String> PRIVATE_SUBNET_KEY_LIST = Arrays.asList("PrivateSubnet1ID","PrivateSubnet2ID", "PrivateSubnet3ID");
+    private static final List<String> PUBLIC_SUBNET_KEY_LIST = Arrays.asList("PublicSubnet1ID","PublicSubnet2ID", "PublicSubnet3ID");
     
     private static final String SSM_STACK_NAME = "/OpenShift/CreateStacks/Dev/StackName";
     private static final String SSM_MASTER_TEMPLATE_URL = "/OpenShift/CreateStacks/Dev/MasterTemplateURL";   
@@ -189,7 +189,9 @@ public class OpenShiftStackManager {
 		List<Parameter> parameterList = generateParameterList(openShiftAdminPasswordParam, redhatSubscriptionUserNameParam, redhatSubscriptionPasswordParam,
 				redhatSubscriptionPoolIdParam, keyPairNameParam, remoteAccessCIDRParam,containerAccessCIDRParam, availabilityZonesParam);
 		
-		if (allSubnetParametersAvailable(subnetParameterMap)) {		
+		if (allSubnetParametersAvailable(subnetParameterMap)) {	
+			log.info("All subnets present, removing 'Availability Zones' parameter.");
+			parameterList.remove(availabilityZonesParam);
 			for (String privateSubnetKey : PRIVATE_SUBNET_KEY_LIST) {
 				Parameter privateSubnetsParam = setParameter(privateSubnetKey,
 						subnetParameterMap.get(privateSubnetKey).toString());
@@ -205,7 +207,7 @@ public class OpenShiftStackManager {
 			//Get VPCCIDR using the first entry in private subnet list
 			String subnetId = subnetParameterMap.get(PRIVATE_SUBNET_KEY_LIST.get(0));
 			String vpccidr = getVPCCIDRFromSubnetId(subnetId);
-			Parameter vpccidrParam = setParameter(VPCCIDR_KEY, vpccidr);
+			Parameter vpccidrParam = setParameter(VPCID_KEY, vpccidr);
 			parameterList.add(vpccidrParam);
 		}
 		
